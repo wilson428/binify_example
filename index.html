@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+ 
+.counties {
+  fill: #900;
+}
+ 
+.states {
+  fill: none;
+  stroke: #ccc;
+  stroke-linejoin: round;
+}
+ 
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script>
+ 
+var width = 960,
+    height = 500;
+ 
+var projection = d3.geo.albersUsa();
+ 
+var path = d3.geo.path()
+	.projection(projection);
+ 
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+ 
+var us, hexagons, remaining = 2;
+ 
+d3.json("/d/4090846/us.json", function(json) {
+    us = json;
+    if (!--remaining) ready(us, hexagons);
+});
+ 
+d3.json("coordinates.json", function(json) {
+    hexagons = json;
+    if (!--remaining) ready(us, hexagons);
+});
+ 
+function ready(us, hexagons) {
+  var bins = topojson.feature(hexagons, hexagons.objects.binned).features;
+  var max = d3.max(bins, function(d) { return d.properties.COUNT; });
+  
+  svg.append("g")
+      .attr("class", "counties")
+      .selectAll("path")
+      .data(bins)
+      .enter().append("path")
+      .style("fill-opacity", function(d) { return Math.sqrt(d.properties.COUNT / max); })
+      .attr("d", path);
+ 
+  svg.append("path")
+      .datum(topojson.mesh(us, us.objects.states))
+      .attr("class", "states")
+      .attr("d", path);
+}
+ 
+</script>
+</body>
+</html>
